@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>DarkScan</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="header">
+    <h1>DarkScan</h1>
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="#C9A96E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M12 8V12" stroke="#C9A96E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M12 16H12.01" stroke="#C9A96E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </div>
+  
+  <div class="url-display" id="urlDisplay">Loading...</div>
+  
+  <div class="score-container">
+    <div class="loader" id="loader"></div>
+    <div class="score-value" id="scoreValue">--</div>
+    <div class="score-label">Manipulation Index</div>
+  </div>
+  
+  <div class="breakdown-title">Pattern Breakdown</div>
+  <div class="breakdown" id="breakdown">
+    <div class="category-row"><span class="category-name">Fake Countdown</span><div class="bar-bg"><div class="bar-fill" id="bar_fake_countdown"></div></div><span class="cat-count" id="txt_fake_countdown">0</span></div>
+    <div class="category-row"><span class="category-name">Hidden Cost</span><div class="bar-bg"><div class="bar-fill" id="bar_hidden_cost"></div></div><span class="cat-count" id="txt_hidden_cost">0</span></div>
+    <div class="category-row"><span class="category-name">Roach Motel</span><div class="bar-bg"><div class="bar-fill" id="bar_roach_motel"></div></div><span class="cat-count" id="txt_roach_motel">0</span></div>
+    <div class="category-row"><span class="category-name">Trick Question</span><div class="bar-bg"><div class="bar-fill" id="bar_trick_question"></div></div><span class="cat-count" id="txt_trick_question">0</span></div>
+    <div class="category-row"><span class="category-name">Forced Continuity</span><div class="bar-bg"><div class="bar-fill" id="bar_forced_continuity"></div></div><span class="cat-count" id="txt_forced_continuity">0</span></div>
+    <div class="category-row"><span class="category-name">Confirm Shaming</span><div class="bar-bg"><div class="bar-fill" id="bar_confirm_shaming"></div></div><span class="cat-count" id="txt_confirm_shaming">0</span></div>
+  </div>
+
+  <div class="actions">
+    <button id="btnAnalyze" class="primary">Analyze Current Page</button>
+    <button id="btnToggle">Toggle Visual Overlay: ON</button>
+    <button id="btnReport">Open Detailed Dashboard</button>
+  </div>
+  
+  <div class="footer" id="lastUpdated">Never analyzed</div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

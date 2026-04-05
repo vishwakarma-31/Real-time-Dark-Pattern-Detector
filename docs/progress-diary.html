@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weekly Progress Diary</title>
+<style>
+  @media print {
+    @page {
+      size: A4;
+      margin: 2.5cm;
+    }
+  }
+  body {
+    font-family: 'Times New Roman', Times, serif;
+    color: #000;
+    line-height: 1.4;
+    margin: 0 auto;
+    max-width: 800px;
+    padding: 2.5cm;
+    box-sizing: border-box;
+  }
+  .header {
+    text-align: center;
+    border-bottom: 2px solid #000;
+    padding-bottom: 20px;
+    margin-bottom: 30px;
+  }
+  .header h1 {
+    font-size: 22px;
+    text-transform: uppercase;
+    margin: 0 0 10px 0;
+  }
+  .student-details {
+    display: table;
+    width: 100%;
+    margin-top: 20px;
+    font-size: 14px;
+  }
+  .student-details .row {
+    display: table-row;
+  }
+  .student-details .cell {
+    display: table-cell;
+    padding: 5px;
+    text-align: left;
+  }
+  .student-details .cell.label {
+    font-weight: bold;
+    width: 20%;
+  }
+  
+  .week-section {
+    page-break-before: always;
+  }
+  .week-section:first-of-type {
+    page-break-before: auto;
+  }
+  .week-title {
+    font-size: 18px;
+    background: #f0f0f0; /* Will print as light gray/halftone in B/W */
+    border: 1px solid #000;
+    padding: 5px 10px;
+    margin: 20px 0;
+    font-weight: bold;
+  }
+
+  .daily-entry {
+    border: 1px solid #000;
+    margin-bottom: 20px;
+    page-break-inside: avoid;
+  }
+  .daily-header {
+    background: #e0e0e0;
+    border-bottom: 1px solid #000;
+    padding: 5px 10px;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+  }
+  .entry-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .entry-table th, .entry-table td {
+    border: 1px solid #000;
+    padding: 8px;
+    text-align: left;
+    vertical-align: top;
+    font-size: 13px;
+  }
+  .entry-table th {
+    width: 25%;
+  }
+  
+  .signature-line {
+    margin-top: 15px;
+    text-align: right;
+    padding: 10px;
+    font-style: italic;
+  }
+  
+  .weekly-summary {
+    border: 2px solid #000;
+    padding: 15px;
+    margin-top: 30px;
+    page-break-inside: avoid;
+  }
+  .weekly-summary h3 {
+    margin-top: 0;
+    text-align: center;
+    border-bottom: 1px dashed #000;
+    padding-bottom: 10px;
+  }
+  .summary-sign-grid {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 50px;
+  }
+  .sign-box {
+    text-align: center;
+    width: 30%;
+    border-top: 1px solid #000;
+    padding-top: 5px;
+  }
+</style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>Project Progress Diary</h1>
+    <h2 style="margin: 0;">Real-Time Dark Pattern Detector</h2>
+    
+    <div class="student-details">
+      <div class="row">
+        <div class="cell label">Student Name:</div>
+        <div class="cell">[Student Name]</div>
+        <div class="cell label">Roll Number:</div>
+        <div class="cell">[Roll/Registration Number]</div>
+      </div>
+      <div class="row">
+        <div class="cell label">Project Guide:</div>
+        <div class="cell">[Guide Name]</div>
+        <div class="cell label">Institution:</div>
+        <div class="cell">[Institution Name]</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="week-section">
+    <div class="week-title">Week 1: Foundation & Literature Review + ML Baseline Setup</div>
+
+    <!-- Day 1 -->
+    <div class="daily-entry">
+      <div class="daily-header">
+        <span>Day 1</span>
+        <span>Date: __ / __ / 20__</span>
+      </div>
+      <table class="entry-table">
+        <tr>
+          <th>Tasks Planned</th>
+          <td>Begin comprehensive literature survey; scaffold base Chrome Extension files; verify database connections.</td>
+        </tr>
+        <tr>
+          <th>Tasks Completed</th>
+          <td>
+            Literature survey initiated. Read 4 core papers: 
+            1. Gray et al. (2018) - Dark pattern taxonomy.<br>
+            2. Mathur et al. (2019) - Shopping websites study.<br>
+            3. Bösch et al. (2016) - UX privacy dark patterns.<br>
+            4. Brignull (2010) - Original terminology.<br>
+            Created extension project directory. Written manifest.json (MV3). Tested MongoDB connection successfully.
+          </td>
+        </tr>
+        <tr>
+          <th>Problems Faced</th>
+          <td>Initial connection timeout with local MongoDB instance during testing.</td>
+        </tr>
+        <tr>
+          <th>Solutions Applied</th>
+          <td>Updated standard localhost binding to 127.0.0.1 in the connection string to bypass Node v18 IPv6 resolution issues.</td>
+        </tr>
+        <tr>
+          <th>References Consulted</th>
+          <td>IEEE Xplore, ACM Digital Library, Chrome Extension MV3 Docs.</td>
+        </tr>
+        <tr>
+          <th>Tomorrow's Plan</th>
+          <td>Read remaining 6 papers. Draft formal literature review document.</td>
+        </tr>
+      </table>
+      <div class="signature-line">Student Signature: _________________</div>
+    </div>
+
+    <!-- Day 2 -->
+    <div class="daily-entry">
+      <div class="daily-header">
+        <span>Day 2</span>
+        <span>Date: __ / __ / 20__</span>
+      </div>
+      <table class="entry-table">
+        <tr>
+          <th>Tasks Planned</th>
+          <td>Complete literature survey reading. Formulate the official taxonomy of dark patterns to be used.</td>
+        </tr>
+        <tr>
+          <th>Tasks Completed</th>
+          <td>Read 6 additional papers targeting visual and NLP classification methods. Formalized a 6-category taxonomy (fake countdown, hidden cost, roach motel, trick question, forced continuity, confirm shaming). Drafted definitions and DOM/NLP signals for each.</td>
+        </tr>
+        <tr>
+          <th>Problems Faced</th>
+          <td>Overlap in definitions between "forced action" and "forced continuity" in existing literature.</td>
+        </tr>
+        <tr>
+          <th>Solutions Applied</th>
+          <td>Defined strict boundary heuristics: forced continuity will specifically target trial-to-paid conversion mechanics.</td>
+        </tr>
+        <tr>
+          <th>References Consulted</th>
+          <td>Bongard-Blanchy et al. (2021) on confirmshaming visual analysis.</td>
+        </tr>
+        <tr>
+          <th>Tomorrow's Plan</th>
+          <td>Draft and formatting of the Literature Review document. Create JSON annotation schema.</td>
+        </tr>
+      </table>
+      <div class="signature-line">Student Signature: _________________</div>
+    </div>
+
+    <!-- Day 3 -->
+    <div class="daily-entry">
+      <div class="daily-header">
+        <span>Day 3</span>
+        <span>Date: __ / __ / 20__</span>
+      </div>
+      <table class="entry-table">
+        <tr>
+          <th>Tasks Planned</th>
+          <td>Finalize literature review. Develop annotation schema for the crawler dataset.</td>
+        </tr>
+        <tr>
+          <th>Tasks Completed</th>
+          <td>Compiled docs/literature-review.md with IEEE citations, summaries, and gap analysis. Included the DPDP Act 2023 legal intersection. Designed data/annotation-schema.json with 3 concrete website examples (e.g. Amazon, Booking).</td>
+        </tr>
+        <tr>
+          <th>Problems Faced</th>
+          <td>JSON schema format validation failed on bounding box representations.</td>
+        </tr>
+        <tr>
+          <th>Solutions Applied</th>
+          <td>Adopted x, y, w, h numeric attributes rather than nested arrays to ensure faster serialization in the backend.</td>
+        </tr>
+        <tr>
+          <th>References Consulted</th>
+          <td>Official Gazette of India (DPDP Act 2023). JSON Schema Draft-07 specification.</td>
+        </tr>
+        <tr>
+          <th>Tomorrow's Plan</th>
+          <td>Develop Chrome extension content scripts and overlay logic.</td>
+        </tr>
+      </table>
+      <div class="signature-line">Student Signature: _________________</div>
+    </div>
+
+    <!-- Day 4 -->
+    <div class="daily-entry">
+      <div class="daily-header">
+        <span>Day 4</span>
+        <span>Date: __ / __ / 20__</span>
+      </div>
+      <table class="entry-table">
+        <tr>
+          <th>Tasks Planned</th>
+          <td>Implement DOM extraction in content script. Inject shadow DOM overlay boundaries.</td>
+        </tr>
+        <tr>
+          <th>Tasks Completed</th>
+          <td>Wrote content/content.js. Implemented debounced MutationObserver to track active changes without high CPU usage. Extracts buttons, timers, prices. Created overlay.js utilizing Shadow DOM to inject red/orange highlight borders over deceptive elements.</td>
+        </tr>
+        <tr>
+          <th>Problems Faced</th>
+          <td>CSS bleed from heavily styled host sites corrupting overlay visuals.</td>
+        </tr>
+        <tr>
+          <th>Solutions Applied</th>
+          <td>Encapsulated all overlay HTML in a local Shadow DOM root attached to the body tag with maximum z-index.</td>
+        </tr>
+        <tr>
+          <th>References Consulted</th>
+          <td>MDN Web Docs (Shadow DOM, MutationObserver).</td>
+        </tr>
+        <tr>
+          <th>Tomorrow's Plan</th>
+          <td>Build the extension popup UI and the background service worker proxy.</td>
+        </tr>
+      </table>
+      <div class="signature-line">Student Signature: _________________</div>
+    </div>
+
+    <!-- Day 5 -->
+    <div class="daily-entry">
+      <div class="daily-header">
+        <span>Day 5</span>
+        <span>Date: __ / __ / 20__</span>
+      </div>
+      <table class="entry-table">
+        <tr>
+          <th>Tasks Planned</th>
+          <td>Finalize Chrome extension UI (popup.html) and service worker routing.</td>
+        </tr>
+        <tr>
+          <th>Tasks Completed</th>
+          <td>Designed a dark-themed popup.html with progressive load bars for 6 dark pattern categories. Wrote background.js to cache results in chrome.storage.local for 10 minutes and handle WebSocket updates for live streaming.</td>
+        </tr>
+        <tr>
+          <th>Problems Faced</th>
+          <td>Manifest V3 service workers shutting down abruptly due to timeout ceilings during idle.</td>
+        </tr>
+        <tr>
+          <th>Solutions Applied</th>
+          <td>Delegated the heavy lifting to the external API, utilizing WebSocket pings to maintain active connection context when processing.</td>
+        </tr>
+        <tr>
+          <th>References Consulted</th>
+          <td>Chrome Extension MV3 Service Worker lifecycle guide.</td>
+        </tr>
+        <tr>
+          <th>Tomorrow's Plan</th>
+          <td>Begin backend API scaffold. Setup Express, Redis, and Mongoose schemas.</td>
+        </tr>
+      </table>
+      <div class="signature-line">Student Signature: _________________</div>
+    </div>
+
+    <!-- Day 6 -->
+    <div class="daily-entry">
+      <div class="daily-header">
+        <span>Day 6</span>
+        <span>Date: __ / __ / 20__</span>
+      </div>
+      <table class="entry-table">
+        <tr>
+          <th>Tasks Planned</th>
+          <td>Setup backend models, resilient Redis caching, and WebSocket server setup on Express.</td>
+        </tr>
+        <tr>
+          <th>Tasks Completed</th>
+          <td>Created backend/models/SiteAudit.js with proper indexing for URL+timestamp. Established Express routes framework. Wrote a robust Redis wrapper handling connection retries gracefully. Deployed ws library alongside Express HTTP server to manage socket sessions.</td>
+        </tr>
+        <tr>
+          <th>Problems Faced</th>
+          <td>Synchronizing WebSocket emissions with standard REST HTTP endpoints.</td>
+        </tr>
+        <tr>
+          <th>Solutions Applied</th>
+          <td>Created a global session map in websocketService.js mapped to UUIDs passed in the HTTP request payload for targeted emits.</td>
+        </tr>
+        <tr>
+          <th>References Consulted</th>
+          <td>ws library documentation, ioredis retry strategy docs.</td>
+        </tr>
+        <tr>
+          <th>Tomorrow's Plan</th>
+          <td>Implement parallel analysis orchestrator (NLP, DOM, Vision) and fusion logic.</td>
+        </tr>
+      </table>
+      <div class="signature-line">Student Signature: _________________</div>
+    </div>
+
+    <!-- Day 7 -->
+    <div class="daily-entry">
+      <div class="daily-header">
+        <span>Day 7</span>
+        <span>Date: __ / __ / 20__</span>
+      </div>
+      <table class="entry-table">
+        <tr>
+          <th>Tasks Planned</th>
+          <td>Complete analyzeService.js algorithm mapping for ML detectors and finalize Week 1 documentation.</td>
+        </tr>
+        <tr>
+          <th>Tasks Completed</th>
+          <td>Wrote runAllDetectors leveraging Promise.all for GPT-4o text analysis, heuristic DOM rule-engine, and GPT-4o vision image analysis. Constructed sensor fusion equation applying 40/35/25 weighting. Mapped results directly to DPDP Act 2023 provisions.</td>
+        </tr>
+        <tr>
+          <th>Problems Faced</th>
+          <td>Significant latency waiting for sequential API responses from simulated ML detectors.</td>
+        </tr>
+        <tr>
+          <th>Solutions Applied</th>
+          <td>Separated detectors into asynchronous promises and piped distinct event updates ('nlp_complete', 'vision_complete') back to the extension UI during wait time.</td>
+        </tr>
+        <tr>
+          <th>References Consulted</th>
+          <td>OpenAI API Guidelines, Node.js concurrency best practices.</td>
+        </tr>
+        <tr>
+          <th>Tomorrow's Plan</th>
+          <td>End of Week 1. Review with Guide.</td>
+        </tr>
+      </table>
+      <div class="signature-line">Student Signature: _________________</div>
+    </div>
+
+    <!-- Weekly Summary Box -->
+    <div class="weekly-summary">
+      <h3>Weekly Summary & Evaluation</h3>
+      <p><strong>Objectives Set for Week 1:</strong> Conduct literature review, establish pattern taxonomy, scaffold MV3 extension, scaffold multi-modal backend API.</p>
+      <p><strong>Objectives Achieved:</strong> All 16 primary baseline files successfully coded, schema designed, and legal references mapped. End-to-end framework layout is stable.</p>
+      
+      <p style="margin-top:20px;"><strong>Guide's Remarks/Feedback:</strong></p>
+      <div style="border-bottom: 1px dotted #000; margin-top: 30px;"></div>
+      <div style="border-bottom: 1px dotted #000; margin-top: 30px;"></div>
+
+      <div class="summary-sign-grid">
+        <div class="sign-box">Student Signature</div>
+        <div class="sign-box">Guide Signature</div>
+        <div class="sign-box">Date</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Week 3 Section -->
+  <div class="week-section">
+    <div class="week-title">Week 3: Dashboard + Polish + Deployment</div>
+
+    <!-- Day 15 -->
+    <div class="daily-entry">
+      <div class="daily-header">
+        <span>Day 15</span>
+        <span>Date: __ / __ / 20__</span>
+      </div>
+      <table class="entry-table">
+        <tr>
+          <th>Tasks Planned</th>
+          <td>Design and layout formulation for the web dashboard. Finalizing UI theme (Dark Luxury).</td>
+        </tr>
+        <tr>
+          <th>Tasks Completed</th>
+          <td>Established aesthetic guidelines involving #0A0A0A backgrounds and #C9A96E gold typography. Created CSS variables and integrated into index.css. Setup Vite React scaffold.</td>
+        </tr>
+        <tr>
+          <th>Problems Faced</th>
+          <td>Standard UI components felt out of place with luxury design constraints.</td>
+        </tr>
+        <tr>
+          <th>Solutions Applied</th>
+          <td>Adopted Ant Design dark mode and injected global token overrides via ConfigProvider.</td>
+        </tr>
+        <tr>
+          <th>References Consulted</th>
+          <td>Ant Design v5 documentation, Vite tooling.</td>
+        </tr>
+        <tr>
+          <th>Tomorrow's Plan</th>
+          <td>Build the data visualization hooks and primary dashboard pages.</td>
+        </tr>
+      </table>
+      <div class="signature-line">Student Signature: _________________</div>
+    </div>
+
+    <!-- Day 16 -->
+    <div class="daily-entry">
+      <div class="daily-header">
+        <span>Day 16</span>
+        <span>Date: __ / __ / 20__</span>
+      </div>
+      <table class="entry-table">
+        <tr>
+          <th>Tasks Planned</th>
+          <td>Build core Dashboard and Heatmap components.</td>
+        </tr>
+        <tr>
+          <th>Tasks Completed</th>
+          <td>Built DashboardPage.jsx and HeatmapPage.jsx connecting to history API. Used Recharts to implement dynamic manipulation trend monitoring and category frequency graphing.</td>
+        </tr>
+        <tr>
+          <th>Problems Faced</th>
+          <td>Data synchronization mapping historical patterns.</td>
+        </tr>
+        <tr>
+          <th>Solutions Applied</th>
+          <td>Applied Mongoose aggregations on the backend to provide pre-calculated formatting for Recharts.</td>
+        </tr>
+        <tr>
+          <th>References Consulted</th>
+          <td>Recharts library docs.</td>
+        </tr>
+        <tr>
+          <th>Tomorrow's Plan</th>
+          <td>Develop the specific audit view ReportPage.jsx alongside PDF generation.</td>
+        </tr>
+      </table>
+      <div class="signature-line">Student Signature: _________________</div>
+    </div>
+
+    <!-- Day 17 -->
+    <div class="daily-entry">
+      <div class="daily-header">
+        <span>Day 17</span>
+        <span>Date: __ / __ / 20__</span>
+      </div>
+      <table class="entry-table">
+        <tr>
+          <th>Tasks Planned</th>
+          <td>Render analytical details and PDF Export capability.</td>
+        </tr>
+        <tr>
+          <th>Tasks Completed</th>
+          <td>Implemented ReportPage.jsx to visualize active bounding boxes over raw screenshots via HTML Canvas. Added jsPDF generation for robust reporting suitable for consumer rights documentation.</td>
+        </tr>
+        <tr>
+          <th>Problems Faced</th>
+          <td>Generating styled PDF outputs on the client-side.</td>
+        </tr>
+        <tr>
+          <th>Solutions Applied</th>
+          <td>Utilized jsPDF geometric drawing functions mapping to dynamic UI coordinates keeping aesthetic intact inside the PDF output.</td>
+        </tr>
+        <tr>
+          <th>References Consulted</th>
+          <td>jsPDF API docs.</td>
+        </tr>
+        <tr>
+          <th>Tomorrow's Plan</th>
+          <td>Refactor the extension UI popups and overlays to match the new luxury theme.</td>
+        </tr>
+      </table>
+      <div class="signature-line">Student Signature: _________________</div>
+    </div>
+
+    <!-- Day 18 -->
+    <div class="daily-entry">
+      <div class="daily-header">
+        <span>Day 18</span>
+        <span>Date: __ / __ / 20__</span>
+      </div>
+      <table class="entry-table">
+        <tr>
+          <th>Tasks Planned</th>
+          <td>Extension integration and UI synchronization.</td>
+        </tr>
+        <tr>
+          <th>Tasks Completed</th>
+          <td>Overhauled popup.css and popup.js matching #C9A96E theme. Upgraded overlay.js utilizing framed tooltips avoiding CSS bleeding through Shadow DOM separation.</td>
+        </tr>
+        <tr>
+          <th>Problems Faced</th>
+          <td>Tooltip clipping inside the shadow DOM bounds.</td>
+        </tr>
+        <tr>
+          <th>Solutions Applied</th>
+          <td>Adjusted overlay sizing metrics and bound the tooltips absolutely allowing visible overflow.</td>
+        </tr>
+        <tr>
+          <th>References Consulted</th>
+          <td>Shadow DOM styling constraints.</td>
+        </tr>
+        <tr>
+          <th>Tomorrow's Plan</th>
+          <td>Pipeline Dockerization and backend multi-stage consolidation.</td>
+        </tr>
+      </table>
+      <div class="signature-line">Student Signature: _________________</div>
+    </div>
+
+    <!-- Day 19 -->
+    <div class="daily-entry">
+      <div class="daily-header">
+        <span>Day 19</span>
+        <span>Date: __ / __ / 20__</span>
+      </div>
+      <table class="entry-table">
+        <tr>
+          <th>Tasks Planned</th>
+          <td>Consolidated full stack containerization orchestrations.</td>
+        </tr>
+        <tr>
+          <th>Tasks Completed</th>
+          <td>Written Dockerfile utilizing lightweight multi-stage builds embedding React within the Node instance. Configured compose logic. Linked GitHub Actions yaml for CI/CD integration.</td>
+        </tr>
+        <tr>
+          <th>Problems Faced</th>
+          <td>Serving React static routing smoothly over API paths in Express.</td>
+        </tr>
+        <tr>
+          <th>Solutions Applied</th>
+          <td>Updated server.js routing utilizing express.static mapping directly onto compiled dist alongside error-fallbacks returning index.html for unknown extensions.</td>
+        </tr>
+        <tr>
+          <th>References Consulted</th>
+          <td>Docker Official Guides. Node Production Best Practices.</td>
+        </tr>
+        <tr>
+          <th>Tomorrow's Plan</th>
+          <td>Real-site local testing and dataset generation.</td>
+        </tr>
+      </table>
+      <div class="signature-line">Student Signature: _________________</div>
+    </div>
+
+    <!-- Day 20 -->
+    <div class="daily-entry">
+      <div class="daily-header">
+        <span>Day 20</span>
+        <span>Date: __ / __ / 20__</span>
+      </div>
+      <table class="entry-table">
+        <tr>
+          <th>Tasks Planned</th>
+          <td>Final functional benchmark. Project live deployment.</td>
+        </tr>
+        <tr>
+          <th>Tasks Completed</th>
+          <td>Engineered runSiteTest.js executing Axios tests across mock sites. Validated latency requirements (<6s). Finalized test-report.md reporting success on multi-modal orchestration. Deployment script execution.</td>
+        </tr>
+        <tr>
+          <th>Problems Faced</th>
+          <td>System rate limit hit occasionally during automated iteration.</td>
+        </tr>
+        <tr>
+          <th>Solutions Applied</th>
+          <td>Increased testing latency bounds and established dedicated IP whitelisting parameters inside Redis limiting infrastructure.</td>
+        </tr>
+        <tr>
+          <th>References Consulted</th>
+          <td>Testing standards for multi-modal systems.</td>
+        </tr>
+        <tr>
+          <th>Tomorrow's Plan</th>
+          <td>Final project presentation preparation.</td>
+        </tr>
+      </table>
+      <div class="signature-line">Student Signature: _________________</div>
+    </div>
+
+    <!-- Weekly Summary Box -->
+    <div class="weekly-summary">
+      <h3>Weekly Summary & Evaluation</h3>
+      <p><strong>Objectives Set for Week 3:</strong> Setup Dashboard web application, polish UI matching aesthetic requirements, create testing automation, Dockerize pipeline.</p>
+      <p><strong>Objectives Achieved:</strong> The analytical layer is complete. The system is containerized, visually cohesive with the established aesthetic parameters, and operational for live examination demoing.</p>
+      
+      <p style="margin-top:20px;"><strong>Guide's Remarks/Feedback:</strong></p>
+      <div style="border-bottom: 1px dotted #000; margin-top: 30px;"></div>
+      <div style="border-bottom: 1px dotted #000; margin-top: 30px;"></div>
+
+      <div class="summary-sign-grid">
+        <div class="sign-box">Student Signature</div>
+        <div class="sign-box">Guide Signature</div>
+        <div class="sign-box">Date</div>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>

@@ -1,0 +1,36 @@
+name: Deploy DarkScan
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          
+      - name: Install dependencies and build dashboard
+        run: |
+          cd dashboard
+          npm ci
+          npm run build
+          
+      - name: Build Docker Image
+        run: docker build -t darkscan-app .
+        
+      # In a real deployed environment, push to registry and trigger remote docker pull.
+      # For demo, validating container spins up successfully locally.
+      - name: Test Container Up
+        run: |
+          docker run -d -p 5000:5000 --name test-bed --env REDIS_URL=redis://localhost:6379 darkscan-app
+          sleep 10
+          docker logs test-bed

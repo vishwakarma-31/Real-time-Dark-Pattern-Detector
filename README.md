@@ -1,1 +1,0 @@
-# Real-time-Dark-Pattern-Detector
