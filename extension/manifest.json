@@ -3,7 +3,7 @@
   "name": "Real-Time Dark Pattern Detector",
   "version": "1.0.0",
   "description": "Detects manipulative dark patterns on websites in real-time using AI analysis. Highlights deceptive UI elements and shows a manipulation score for each page visited.",
-  "homepage_url": "https://YOUR_ACTUAL_DOMAIN",
+  "homepage_url": "http://localhost:5174",
   "permissions": [
     "activeTab",
     "scripting",
@@ -11,10 +11,8 @@
     "contextMenus"
   ],
   "host_permissions": [
-    "<all_urls>",
-    "https://YOUR_ACTUAL_DOMAIN/*"
+    "<all_urls>"
   ],
-  "_host_permissions_comment": "Keep explicit production domain in MV3 host_permissions in addition to <all_urls>.",
   "background": {
     "service_worker": "background/background.js"
   },

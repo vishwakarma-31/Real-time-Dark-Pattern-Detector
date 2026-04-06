@@ -14,10 +14,7 @@ const UserSchema = new mongoose.Schema({
   },
   name: {
     type: String,
-    trim: true
-  },
-  organization: {
-    type: String,
+    trim: true,
     default: ''
   },
   role: {
@@ -30,12 +27,12 @@ const UserSchema = new mongoose.Schema({
     default: Date.now
   },
   lastLogin: {
-    type: Date
+    type: Date,
+    default: null
   }
 });
 
 UserSchema.index({ email: 1 }, { unique: true });
-UserSchema.index({ createdAt: 1 });
 
 UserSchema.pre('save', async function preSave(next) {
   if (!this.isModified('passwordHash')) {
@@ -43,7 +40,9 @@ UserSchema.pre('save', async function preSave(next) {
   }
 
   try {
-    this.passwordHash = await bcrypt.hash(this.passwordHash, 12);
+    if (!this.passwordHash.startsWith('$2b$')) {
+      this.passwordHash = await bcrypt.hash(this.passwordHash, 10);
+    }
     return next();
   } catch (err) {
     return next(err);
@@ -54,11 +53,14 @@ UserSchema.statics.findByCredentials = async function findByCredentials(email, p
   const normalizedEmail = String(email).trim().toLowerCase();
   const user = await this.findOne({ email: normalizedEmail });
   if (!user) {
-    return null;
+    throw new Error('Invalid credentials');
   }
 
   const matches = await bcrypt.compare(password, user.passwordHash);
-  return matches ? user : null;
+  if (!matches) {
+    throw new Error('Invalid credentials');
+  }
+  return user;
 };
 
 module.exports = mongoose.model('User', UserSchema);

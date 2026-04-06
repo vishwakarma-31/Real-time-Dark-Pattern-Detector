@@ -1,6 +1,7 @@
+// Run once with: node extension/assets/generate_icons.js
 const fs = require('fs');
-const path = require('path');
 const zlib = require('zlib');
+const path = require('path');
 
 const SIZES = [16, 32, 48, 128];
 const OUTPUT_DIR = __dirname;

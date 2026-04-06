@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
 const User = require('../models/User');
 
 const signToken = (user) => jwt.sign(
@@ -41,20 +42,21 @@ exports.login = async (req, res) => {
 exports.register = async (req, res) => {
   const { email, password, name } = req.body || {};
 
-  if (!email || !password || !name) {
-    return res.status(400).json({ error: 'Email, password, and name are required' });
+  if (!email || !password || !name || String(password).length < 6) {
+    return res.status(400).json({ error: 'Email, password (min 6), and name are required' });
   }
 
   try {
     const normalizedEmail = String(email).trim().toLowerCase();
     const existing = await User.findOne({ email: normalizedEmail });
     if (existing) {
-      return res.status(409).json({ error: 'Email already in use' });
+      return res.status(409).json({ error: 'Email already registered' });
     }
 
+    const hashedPassword = await bcrypt.hash(password, 10);
     const user = await User.create({
       email: normalizedEmail,
-      passwordHash: password,
+      passwordHash: hashedPassword,
       name: String(name).trim()
     });
 
@@ -64,7 +66,8 @@ exports.register = async (req, res) => {
       user: {
         _id: user._id,
         email: user.email,
-        name: user.name
+        name: user.name,
+        role: user.role
       }
     });
   } catch (err) {

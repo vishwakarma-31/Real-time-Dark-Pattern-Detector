@@ -34,18 +34,18 @@ function getUserIdFromRequest(req) {
 }
 
 module.exports = async function costGuard(req, res, next) {
-  const today = getUtcDay();
-  const userId = getUserIdFromRequest(req);
-
-  const userLimit = parseInt(process.env.USER_DAILY_ANALYSIS_LIMIT || '50', 10);
-  const anonLimit = parseInt(process.env.ANON_DAILY_ANALYSIS_LIMIT || '5', 10);
-
-  const key = userId
-    ? `cost:user:${userId}:${today}`
-    : `cost:anon:${hashIp(getClientIp(req))}:${today}`;
-  const limit = userId ? userLimit : anonLimit;
-
   try {
+    const today = getUtcDay();
+    const userId = getUserIdFromRequest(req);
+
+    const userLimit = parseInt(process.env.USER_DAILY_ANALYSIS_LIMIT || '50', 10);
+    const anonLimit = parseInt(process.env.ANON_DAILY_ANALYSIS_LIMIT || '5', 10);
+
+    const key = userId
+      ? `cost:user:${userId}:${today}`
+      : `cost:anon:${hashIp(getClientIp(req))}:${today}`;
+    const limit = userId ? userLimit : anonLimit;
+
     if (!redisClient.rawClient) {
       return next();
     }
@@ -65,7 +65,7 @@ module.exports = async function costGuard(req, res, next) {
 
     return next();
   } catch (err) {
-    // Fail-open to avoid hard outage if Redis is unavailable.
+    console.warn('[costGuard] passthrough due to error:', err.message);
     return next();
   }
 };

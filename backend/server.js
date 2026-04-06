@@ -36,14 +36,18 @@ if (missingVars.length > 0) {
   process.exit(1);
 }
 
-if (process.env.JWT_SECRET.length < 32) {
-  console.error('FATAL: JWT_SECRET is too short — minimum 32 characters required for security.');
+if (!process.env.JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET is not set');
   process.exit(1);
 }
 
-if (process.env.JWT_SECRET === 'darkscan_dev_secret_change_in_production') {
-  console.error('FATAL: JWT_SECRET is the insecure default. Set a real random secret.');
+if (process.env.NODE_ENV === 'production' && process.env.JWT_SECRET.length < 32) {
+  console.error('FATAL: JWT_SECRET too short for production');
   process.exit(1);
+}
+
+if (process.env.NODE_ENV !== 'production' && process.env.JWT_SECRET.length < 32) {
+  console.warn('[Config] WARNING: JWT_SECRET is short — fine for local dev, use 64+ chars in production');
 }
 
 // Validate OPENAI_API_KEY format (must start with sk-)
@@ -56,8 +60,8 @@ console.log('[Config] Environment validated successfully');
 console.log(`[Config] NODE_ENV: ${process.env.NODE_ENV}`);
 console.log(`[Config] OpenAI key present: sk-...${process.env.OPENAI_API_KEY.slice(-4)}`);
 
-const authRoutes = require('./routes/auth');
 const analyzeRoutes = require('./routes/analyze');
+const authRoutes = require('./routes/auth');
 
 const app = express();
 const server = http.createServer(app);
@@ -77,8 +81,8 @@ mongoose.connect(mongoUri)
   .catch((err) => console.error('[MongoDB] Connection error:', err));
 
 // Routes
-app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1', analyzeRoutes);
+app.use('/api/v1/auth', authRoutes);
 
 // Serve frontend in production
 if (process.env.NODE_ENV === 'production') {

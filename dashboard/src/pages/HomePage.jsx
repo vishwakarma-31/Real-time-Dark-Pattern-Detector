@@ -9,6 +9,7 @@ import api from '../services/api';
 const { Title, Paragraph, Text } = Typography;
 const { Search } = Input;
 
+// WS connects to backend port 5000, not Vite dev server port 5174.
 const WS_URL = import.meta.env.VITE_WS_URL || (window.location.protocol === 'https:' ? `wss://${window.location.host}/ws` : 'ws://localhost:5000/ws');
 
 const HomePage = () => {
