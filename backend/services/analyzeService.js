@@ -1,4 +1,5 @@
 const { emitToSession } = require('./websocketService');
+const redisClient = require('../config/redis');
 // Assuming OpenAI is globally configured in the main repo or passed here:
 // ELEVATED: Added basic mock-friendly wrapper for OpenAI to ensure code runs even if keys are missing in local dev.
 const { OpenAI } = require('openai');
@@ -126,6 +127,16 @@ exports.runVisualDetector = async (screenshotBase64) => {
   try {
     if (!screenshotBase64) return makeDetectorResult('visual', [], Date.now() - start);
 
+    const today = new Date().toISOString().slice(0, 10);
+    const visionCounterKey = `openai:vision:daily:${today}`;
+    const dailyLimit = parseInt(process.env.VISION_DAILY_LIMIT || '200', 10);
+    const currentCountRaw = await redisClient.get(visionCounterKey);
+    const currentCount = parseInt(currentCountRaw || '0', 10);
+
+    if (currentCount >= dailyLimit) {
+      return makeDetectorResult('visual', [], Date.now() - start, 'capped');
+    }
+
     // Stripping the data:image prefix if present for OpenAI format
     const base64Data = screenshotBase64.replace(/^data:image\/\w+;base64,/, "");
 
@@ -148,6 +159,12 @@ exports.runVisualDetector = async (screenshotBase64) => {
     });
 
     const result = JSON.parse(response.choices[0].message.content);
+    if (redisClient.rawClient) {
+      const incremented = await redisClient.rawClient.incr(visionCounterKey);
+      if (incremented === 1) {
+        await redisClient.rawClient.expire(visionCounterKey, 86400);
+      }
+    }
     return makeDetectorResult('visual', result.patterns, Date.now() - start);
   } catch (error) {
     return makeErrorResult('visual', error);

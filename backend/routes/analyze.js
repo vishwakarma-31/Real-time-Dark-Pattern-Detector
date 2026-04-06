@@ -3,6 +3,7 @@ const router = express.Router();
 const analyzeController = require('../controllers/analyzeController');
 const rateLimit = require('express-rate-limit');
 const redisClient = require('../config/redis');
+const costGuard = require('../middleware/costGuard');
 
 // HARDENED: RISK_3 — fake requireAuth replaced with real JWT verification middleware
 const { protect, optionalProtect } = require('../middleware/auth');
@@ -12,7 +13,7 @@ const { analysisLimiter, communityReportLimiter, publishLimiter } = require('../
 // @route   POST /api/v1/analyze
 // @desc    Main entry point for extension audits
 // @access  Public (Rate limited, optionally authenticated)
-router.post('/analyze', analysisLimiter, optionalProtect, analyzeController.analyzeUrl);
+router.post('/analyze', analysisLimiter, costGuard, optionalProtect, analyzeController.analyzeUrl);
 
 // @route   GET /api/v1/analyze/audit/:id
 // @desc    Get specific audit
@@ -49,6 +50,10 @@ router.post('/report/community', communityReportLimiter, analyzeController.repor
 // @access  Public
 // HARDENED: RISK_1 — health endpoint verifies OpenAI key validity
 router.get('/health', async (req, res) => {
+  const today = new Date().toISOString().slice(0, 10);
+  const visionCounterKey = `openai:vision:daily:${today}`;
+  const costToday = parseInt((await redisClient.get(visionCounterKey)) || '0', 10);
+
   // Test Redis
   let redisOk = false;
   try {
@@ -72,6 +77,7 @@ router.get('/health', async (req, res) => {
     redis: redisOk,
     mongo: require('mongoose').connection.readyState === 1,
     openai: openaiOk,
+    costToday,
     // ELEVATED: POLISH_1 — cache hit/miss observability
     cacheStats: redisClient.getStats()
   });

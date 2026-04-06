@@ -14,6 +14,7 @@ const PatternSchema = new mongoose.Schema({
   legalClause: { type: String }
 }, { _id: false });
 
+// Screenshots are NOT persisted. They are passed in-memory to the visual detector only.
 const SiteAuditSchema = new mongoose.Schema({
   url: { type: String, required: true },
   timestamp: { type: Date, default: Date.now },
@@ -23,7 +24,8 @@ const SiteAuditSchema = new mongoose.Schema({
     default: 'extension'
   },
   domSnapshot: { type: mongoose.Schema.Types.Mixed },
-  screenshotBase64: { type: String }, // Can be very large, typically stored in S3, but per spec keeping as String
+  // TODO: Upload to S3 and store URL here if visual evidence archiving is needed.
+  screenshotUrl: { type: String, default: null },
   detectedPatterns: [PatternSchema],
   overallScore: { type: Number, min: 0, max: 100 },
   severityLevel: { 
@@ -81,7 +83,7 @@ SiteAuditSchema.statics.searchByUrl = function(query, limit = 10) {
   return this.find(
     { $text: { $search: query } },
     { score: { $meta: 'textScore' } }
-  ).sort({ score: { $meta: 'textScore' } }).limit(limit).select('-domSnapshot -screenshotBase64');
+  ).sort({ score: { $meta: 'textScore' } }).limit(limit).select('-domSnapshot');
 };
 
 module.exports = mongoose.model('SiteAudit', SiteAuditSchema);

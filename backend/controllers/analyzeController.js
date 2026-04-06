@@ -51,7 +51,7 @@ exports.analyzeUrl = async (req, res) => {
     audit.overallScore = results.overallScore;
     audit.severityLevel = results.overallScore >= 70 ? 'high' : (results.overallScore >= 30 ? 'medium' : 'low');
     audit.processingTimeMs = Date.now() - startMs;
-    // Omit saving screenshotBase64 back to DB to save space in prod, string gets heavy
+    // Screenshots are transient for detector input and are never persisted to SiteAudit.
     await audit.save();
 
     // 6. Save back to Redis
@@ -96,7 +96,7 @@ exports.getAuditHistory = async (req, res) => {
       .sort({ timestamp: -1 })
       .skip(skip)
       .limit(limit)
-      .select('-domSnapshot -screenshotBase64'); // Save bandwidth
+      .select('-domSnapshot'); // Save bandwidth
 
     const total = await SiteAudit.countDocuments({ userId });
     
