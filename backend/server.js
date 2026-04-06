@@ -1,9 +1,50 @@
 const express = require('express');
 const http = require('http');
-const { WebSocketServer } = require('ws');
 const path = require('path');
 const cors = require('cors');
 require('dotenv').config();
+
+// HARDENED: RISK_1 — startup validation crashes fast on missing config
+const REQUIRED_ENV_VARS = [
+  'OPENAI_API_KEY',
+  'MONGO_URI',
+  'JWT_SECRET',
+];
+
+const OPTIONAL_ENV_VARS_WITH_DEFAULTS = {
+  'PORT': '5000',
+  'REDIS_HOST': '127.0.0.1',
+  'REDIS_PORT': '6379',
+  'ANALYSIS_CACHE_TTL': '600',
+  'RATE_LIMIT_MAX_REQUESTS': '20',
+  'NODE_ENV': 'development'
+};
+
+// Apply defaults for optional vars
+Object.entries(OPTIONAL_ENV_VARS_WITH_DEFAULTS).forEach(([key, defaultVal]) => {
+  if (!process.env[key]) {
+    process.env[key] = defaultVal;
+    console.log(`[Config] ${key} not set, using default: ${defaultVal}`);
+  }
+});
+
+// Crash fast on missing required vars
+const missingVars = REQUIRED_ENV_VARS.filter(v => !process.env[v]);
+if (missingVars.length > 0) {
+  console.error('FATAL: Missing required environment variables:', missingVars.join(', '));
+  console.error('Server cannot start without these. Check your .env file or Docker environment.');
+  process.exit(1);
+}
+
+// Validate OPENAI_API_KEY format (must start with sk-)
+if (!process.env.OPENAI_API_KEY.startsWith('sk-')) {
+  console.error('FATAL: OPENAI_API_KEY appears invalid — must start with sk-');
+  process.exit(1);
+}
+
+console.log('[Config] Environment validated successfully');
+console.log(`[Config] NODE_ENV: ${process.env.NODE_ENV}`);
+console.log(`[Config] OpenAI key present: sk-...${process.env.OPENAI_API_KEY.slice(-4)}`);
 
 const analyzeRoutes = require('./routes/analyze');
 
@@ -14,8 +55,9 @@ const mongoose = require('mongoose');
 
 // Middleware
 app.use(cors());
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+// HARDENED: RISK_2 — reduced body limit to 5MB to prevent OOM on small VPS
+app.use(express.json({ limit: '5mb' }));
+app.use(express.urlencoded({ limit: '5mb', extended: true }));
 
 // Database connection
 const mongoUri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/darkscan';
@@ -25,23 +67,6 @@ mongoose.connect(mongoUri)
 
 // Routes
 app.use('/api/v1', analyzeRoutes);
-
-// WebSocket Setup
-const wss = new WebSocketServer({ server, path: '/ws' });
-app.locals.wss = wss; // Expose to controllers
-
-wss.on('connection', (ws, req) => {
-  ws.on('message', (message) => {
-    try {
-      const data = JSON.parse(message);
-      if (data.type === 'register' && data.sessionId) {
-        ws.sessionId = data.sessionId;
-      }
-    } catch (e) {
-      console.error('WS parse error', e);
-    }
-  });
-});
 
 // Serve frontend in production
 if (process.env.NODE_ENV === 'production') {
@@ -58,3 +83,7 @@ const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+// FIXED: BLOCKER_2 — WebSocket now initialized via websocketService, single source of truth
+const wsService = require('./services/websocketService');
+wsService.initWebSocketServer(server);

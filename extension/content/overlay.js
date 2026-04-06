@@ -1,9 +1,11 @@
 // ELEVATED: Wrapped in a class and attached to window to provide clean scope management and prevent multiple Shadow DOM root instantiations.
+// ELEVATED: POLISH_5 — scroll-aware repositioning, summary bar, dismiss memory per session
 
 class OverlayManager {
   constructor() {
     this.shadowRoot = null;
     this.container = null;
+    this.activeOverlays = []; // Array of { element, highlight, pattern }
     this.colorMap = {
       "fake_countdown": "#FF4444",
       "hidden_cost": "#FF8800",
@@ -12,7 +14,9 @@ class OverlayManager {
       "forced_continuity": "#0066FF",
       "confirm_shaming": "#AA0000"
     };
+    this.dismissKey = `dp-dismissed:${window.location.hostname}`;
     this.initShadowDOM();
+    this._boundReposition = () => this.repositionAll();
   }
 
   initShadowDOM() {
@@ -26,7 +30,7 @@ class OverlayManager {
 
     this.shadowRoot = host.attachShadow({ mode: 'open' });
     
-    // Inject core CSS for tooltips
+    // Inject core CSS for tooltips and summary bar
     const style = document.createElement('style');
     style.textContent = `
       .dp-highlight {
@@ -82,19 +86,94 @@ class OverlayManager {
         color: #A0A09A;
         font-size: 11px;
       }
+      .dp-summary-bar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 36px;
+        background: #0A0A0A;
+        border-bottom: 2px solid #C9A96E;
+        display: flex;
+        align-items: center;
+        padding: 0 16px;
+        z-index: 2147483647;
+        gap: 12px;
+        font-family: 'DM Sans', -apple-system, sans-serif;
+        font-size: 13px;
+        color: #F5F5F0;
+        pointer-events: auto;
+      }
+      .dp-summary-count {
+        color: #C9A96E;
+        font-weight: 600;
+      }
+      .dp-summary-dismiss {
+        margin-left: auto;
+        background: transparent;
+        border: 1px solid #333;
+        color: #A0A09A;
+        padding: 4px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+        transition: all 0.2s;
+      }
+      .dp-summary-dismiss:hover {
+        border-color: #C9A96E;
+        color: #C9A96E;
+      }
     `;
     this.shadowRoot.appendChild(style);
     
     this.container = document.createElement('div');
     this.shadowRoot.appendChild(this.container);
-    
-    // Recalculate positions on window resize
-    window.addEventListener('resize', () => { /* Logic to rebuild overlays based on stored patterns */ });
+  }
+
+  // ELEVATED: POLISH_5 — scroll-aware repositioning keeps overlays locked to elements
+  repositionAll() {
+    this.activeOverlays.forEach(({ element, highlight }) => {
+      if (!element || !element.isConnected) return;
+      const rect = element.getBoundingClientRect();
+      highlight.style.top = (rect.top + window.scrollY) + 'px';
+      highlight.style.left = (rect.left + window.scrollX) + 'px';
+      highlight.style.width = rect.width + 'px';
+      highlight.style.height = rect.height + 'px';
+    });
+  }
+
+  // ELEVATED: POLISH_5 — floating summary bar with pattern count and dismiss button
+  injectSummaryBar(patterns) {
+    const existing = this.shadowRoot.querySelector('.dp-summary-bar');
+    if (existing) existing.remove();
+
+    const bar = document.createElement('div');
+    bar.className = 'dp-summary-bar';
+
+    const count = document.createElement('span');
+    count.className = 'dp-summary-count';
+    count.textContent = `DarkScan: ${patterns.length} pattern${patterns.length !== 1 ? 's' : ''} detected`;
+
+    const dismiss = document.createElement('button');
+    dismiss.className = 'dp-summary-dismiss';
+    dismiss.textContent = 'Dismiss overlays';
+    dismiss.onclick = () => this.clearOverlays();
+
+    bar.appendChild(count);
+    bar.appendChild(dismiss);
+    this.shadowRoot.appendChild(bar);
   }
 
   injectOverlays(patterns) {
+    // ELEVATED: POLISH_5 — dismiss memory per session
+    if (sessionStorage.getItem(this.dismissKey) === '1') return;
+
     this.clearOverlays();
     
+    // Attach scroll/resize listeners
+    window.addEventListener('scroll', this._boundReposition, { passive: true });
+    window.addEventListener('resize', this._boundReposition, { passive: true });
+
     patterns.forEach(pattern => {
       // Find element either by DOM selector or use bounding box if fallback
       let el = null;
@@ -136,14 +215,34 @@ class OverlayManager {
         
         highlight.appendChild(tooltip);
         this.container.appendChild(highlight);
+
+        // Store reference for scroll repositioning
+        this.activeOverlays.push({ element: el, highlight, pattern });
       }
     });
+
+    // Inject summary bar after all highlights
+    if (patterns.length > 0) {
+      this.injectSummaryBar(patterns);
+    }
   }
 
   clearOverlays() {
+    // ELEVATED: POLISH_5 — remember dismissal for this session
+    sessionStorage.setItem(this.dismissKey, '1');
+
     if (this.container) {
       this.container.innerHTML = '';
     }
+    this.activeOverlays = [];
+
+    // Remove summary bar
+    const bar = this.shadowRoot?.querySelector('.dp-summary-bar');
+    if (bar) bar.remove();
+
+    // Detach scroll/resize listeners
+    window.removeEventListener('scroll', this._boundReposition);
+    window.removeEventListener('resize', this._boundReposition);
   }
 }
 

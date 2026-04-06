@@ -10,6 +10,14 @@ exports.analyzeUrl = async (req, res) => {
   const { url, domSnapshot, screenshotBase64, sessionId } = req.body;
   const startMs = Date.now();
 
+  // HARDENED: RISK_2 — server-side screenshot size guard
+  const MAX_SCREENSHOT_BYTES = 3 * 1024 * 1024; // 3MB base64
+  let safeScreenshot = screenshotBase64;
+  if (screenshotBase64 && Buffer.byteLength(screenshotBase64, 'utf8') > MAX_SCREENSHOT_BYTES) {
+    console.warn(`[analyzeController] Screenshot too large (${Math.round(Buffer.byteLength(screenshotBase64, 'utf8') / 1024)}KB), dropping visual detector`);
+    safeScreenshot = null;
+  }
+
   try {
     // 1. Check Redis Cache
     const cacheKey = getAuditCacheKey(url);
@@ -20,12 +28,7 @@ exports.analyzeUrl = async (req, res) => {
       return res.status(200).json({ cached: true, ...JSON.parse(cachedData) });
     }
 
-    // 2. Cache Miss -> Acknowledge request rapidly and process in background
-    res.status(202).json({ 
-      status: "processing", 
-      message: "Analysis started. Listen to WebSocket for updates." 
-    });
-
+    // 2. Cache Miss -> Run analysis synchronously, return full result
     if (sessionId) emitToSession(sessionId, 'analysis_started', { url });
 
     // 3. Save pending audit to DB
@@ -40,7 +43,7 @@ exports.analyzeUrl = async (req, res) => {
 
     // 4. Run detectors via service
     const results = await analyzeService.runAllDetectors({
-      url, sessionId, domSnapshot, screenshotBase64
+      url, sessionId, domSnapshot, screenshotBase64: safeScreenshot
     });
 
     // 5. Update DB
@@ -64,6 +67,16 @@ exports.analyzeUrl = async (req, res) => {
 
     // 7. Emit final result via WS
     if (sessionId) emitToSession(sessionId, 'fusion_complete', payloadToCache);
+
+    // FIXED: BLOCKER_4 — HTTP response returns full result synchronously. WebSocket still fires for streaming. Extension has both channels.
+    return res.status(200).json({
+      cached: false,
+      overallScore: audit.overallScore,
+      severityLevel: audit.severityLevel,
+      patterns: audit.detectedPatterns,
+      timestamp: audit.timestamp,
+      auditId: audit._id
+    });
 
   } catch (error) {
     console.error(`[analyzeController] Error processing ${url}:`, error);
@@ -185,7 +198,14 @@ exports.getDashboardStats = async (req, res) => {
        heatmapData.bySiteCategory[siteCat][item._id.category] += item.count;
     });
 
-    const stats = { totalAudits, uniqueSites, averageScore, criticalSites, mostCommonPattern, categoryFrequency, heatmapData, recentActivity };
+    // FIXED: BROKEN_3 — worstSites query added to getDashboardStats
+    const worstSites = await SiteAudit.find({ overallScore: { $exists: true, $ne: null } })
+      .sort({ overallScore: -1 })
+      .limit(5)
+      .select('url overallScore severityLevel timestamp')
+      .lean();
+
+    const stats = { totalAudits, uniqueSites, averageScore, criticalSites, mostCommonPattern, categoryFrequency, heatmapData, recentActivity, worstSites };
     await redisClient.set(cacheKey, JSON.stringify(stats), 300);
 
     res.status(200).json(stats);

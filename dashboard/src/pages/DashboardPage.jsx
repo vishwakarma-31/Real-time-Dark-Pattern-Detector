@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Row, Col, Card, Statistic, Table, Typography, Space, Button } from 'antd';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, BarChart, Bar } from 'recharts';
 import { useNavigate } from 'react-router-dom';
-import CountUp from 'react-countup';
+// FIXED: BLOCKER_1 — removed react-countup import, Vite 8/Rolldown cannot resolve it
 import api from '../services/api';
 import SeverityBadge from '../components/SeverityBadge';
+// ELEVATED: POLISH_6 — EmptyState for meaningful empty dashboard prompts
+import EmptyState from '../components/EmptyState';
 
 const { Title } = Typography;
 
@@ -32,7 +34,7 @@ const DashboardPage = () => {
     fetchData();
   }, []);
 
-  const formatter = (value) => <CountUp end={value} separator="," />;
+  // FIXED: BLOCKER_1 — removed formatter using react-countup, Statistic renders natively
 
   const columns = [
     { title: 'Site', dataIndex: 'url', key: 'url', render: text => <strong>{new URL(text).hostname}</strong> },
@@ -55,17 +57,18 @@ const DashboardPage = () => {
       <Title level={2} style={{ marginBottom: '2rem' }}>Audit Analytics</Title>
       
       <Row gutter={[16, 16]} style={{ marginBottom: '2rem' }}>
+        {/* FIXED: BROKEN_2 — Ant Design native precision used for proper number formatting */}
         <Col xs={12} md={6}>
-          <Card loading={loading}><Statistic title="Total Audits Run" value={stats?.totalAudits || 0} formatter={formatter} /></Card>
+          <Card loading={loading}><Statistic title="Total Audits Run" value={stats?.totalAudits || 0} precision={0} /></Card>
         </Col>
         <Col xs={12} md={6}>
-          <Card loading={loading}><Statistic title="Unique Sites" value={stats?.uniqueSites || 0} formatter={formatter} /></Card>
+          <Card loading={loading}><Statistic title="Unique Sites" value={stats?.uniqueSites || 0} precision={0} /></Card>
         </Col>
         <Col xs={12} md={6}>
-          <Card loading={loading}><Statistic title="Average Score" value={Math.round(stats?.averageScore || 0)} formatter={formatter} /></Card>
+          <Card loading={loading}><Statistic title="Average Score" value={Math.round((stats?.averageScore || 0) * 10) / 10} precision={1} suffix="/ 100" /></Card>
         </Col>
         <Col xs={12} md={6}>
-          <Card loading={loading}><Statistic title="Critical Sites" value={stats?.criticalSites || 0} formatter={formatter} valueStyle={{ color: 'var(--severity-critical)' }} /></Card>
+          <Card loading={loading}><Statistic title="Critical Sites" value={stats?.criticalSites || 0} precision={0} valueStyle={{ color: 'var(--severity-critical)' }} /></Card>
         </Col>
       </Row>
 
@@ -99,21 +102,30 @@ const DashboardPage = () => {
       <Row gutter={[24, 24]}>
          <Col xs={24} lg={16}>
            <Card title="Recent Audits" bodyStyle={{ padding: 0 }}>
-             <Table 
-               columns={columns} 
-               dataSource={history} 
-               rowKey="_id" 
-               pagination={{ pageSize: 5 }} 
-               loading={loading} 
-             />
-           </Card>
+              {/* ELEVATED: POLISH_6 — EmptyState when no audits exist */}
+              {!loading && history.length === 0 ? (
+                <EmptyState
+                  title="No audits yet"
+                  message="Install the extension and visit any website to run your first analysis."
+                />
+              ) : (
+                <Table 
+                  columns={columns} 
+                  dataSource={history} 
+                  rowKey="_id" 
+                  pagination={{ pageSize: 5 }} 
+                  loading={loading} 
+                />
+              )}
+            </Card>
          </Col>
          <Col xs={24} lg={8}>
             <Card title="Worst Offenders" loading={loading} style={{ height: '100%' }}>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={stats?.worstSites || []} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                   <XAxis type="number" domain={[0, 100]} hide />
-                  <YAxis dataKey="url" type="category" width={100} tickFormatter={(val) => new URL(val).hostname.replace('www.', '')} tick={{ fill: 'var(--text-main)', fontSize: 12 }} />
+                  {/* FIXED: BROKEN_3 — safe tickFormatter wraps URL constructor in try/catch */}
+                  <YAxis dataKey="url" type="category" width={100} tickFormatter={(val) => { try { return new URL(val).hostname.replace('www.', ''); } catch { return val; } }} tick={{ fill: 'var(--text-main)', fontSize: 12 }} />
                   <Tooltip cursor={{fill: 'var(--bg-elevated)'}} />
                   <Bar dataKey="overallScore" fill="var(--severity-critical)" radius={[0, 4, 4, 0]} />
                 </BarChart>

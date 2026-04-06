@@ -1,4 +1,5 @@
 // ELEVATED: Added debounce logic to MutationObserver to prevent CPU thrashing on continuous DOM mutations.
+// ELEVATED: POLISH_4 — enhanced DOM extraction, modal detection, performance tracking, first-visit flag
 
 let observer;
 let isOverlayActive = true;
@@ -14,31 +15,76 @@ function init() {
   setupMessageListener();
 }
 
-// Function to take snapshot of the relevant DOM components
+// ELEVATED: POLISH_4 — comprehensive DOM snapshot with richer signal extraction
 function extractDOMSnapshot() {
-  const buttons = Array.from(document.querySelectorAll('button, a[role="button"], input[type="submit"], input[type="button"]'))
-    .map(el => el.innerText.trim()).filter(Boolean).slice(0, 50);
+  // Enhanced button extraction — captures more CTA context including hidden state and classes
+  const buttons = Array.from(document.querySelectorAll(
+    'button, a[role="button"], input[type="submit"], input[type="button"], [role="button"], .btn, .cta, [class*="button"], [class*="btn"]'
+  )).map(el => ({
+    text: el.innerText?.trim() || el.value || el.getAttribute('aria-label') || '',
+    type: el.tagName.toLowerCase(),
+    isHidden: el.offsetParent === null,
+    classes: el.className?.toString().slice(0, 100)
+  })).filter(b => b.text.length > 0 && b.text.length < 200).slice(0, 60);
+
   const forms = Array.from(document.querySelectorAll('form label'))
     .map(el => el.innerText.trim()).filter(Boolean).slice(0, 50);
-  const timers = Array.from(document.querySelectorAll('.timer, .countdown, [id*="timer"], [class*="time-left"]'))
-    .map(el => el.innerText.trim()).filter(Boolean).slice(0, 20);
-  const checkboxes = Array.from(document.querySelectorAll('input[type="checkbox"] + label, label:has(input[type="checkbox"])'))
-    .map(el => el.innerText.trim()).filter(Boolean).slice(0, 50);
-  const modals = Array.from(document.querySelectorAll('[role="dialog"], .modal, .popup'))
-    .map(el => el.innerText.trim().slice(0, 500)).filter(Boolean).slice(0, 10);
-  const prices = Array.from(document.querySelectorAll('.price, [id*="price"], .total'))
-    .map(el => el.innerText.trim()).filter(Boolean).slice(0, 30);
 
-  return { buttons, forms, timers, checkboxes, modals, prices };
+  const timers = Array.from(document.querySelectorAll('.timer, .countdown, [id*="timer"], [class*="time-left"], [class*="countdown"]'))
+    .map(el => el.innerText.trim()).filter(Boolean).slice(0, 20);
+
+  // Enhanced checkbox extraction with pre-checked state
+  const checkboxes = Array.from(document.querySelectorAll('input[type="checkbox"]'))
+    .map(el => {
+      const label = el.closest('label')?.innerText?.trim() || el.nextElementSibling?.innerText?.trim() || '';
+      return { text: label, preChecked: el.checked, name: el.name || '' };
+    }).filter(c => c.text.length > 0).slice(0, 50);
+
+  // Enhanced modal detection — filters only visible modals, detects close buttons and countdowns
+  const modals = Array.from(document.querySelectorAll(
+    '[role="dialog"], [role="alertdialog"], .modal, .popup, .overlay, [class*="modal"], [class*="popup"], [class*="lightbox"]'
+  )).filter(el => {
+    const style = window.getComputedStyle(el);
+    return style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
+  }).map(el => ({
+    text: el.innerText?.trim().slice(0, 400),
+    hasCloseButton: !!el.querySelector('[aria-label*="close"], [class*="close"], button[data-dismiss]'),
+    hasCountdown: !!el.querySelector('.timer, .countdown, [class*="timer"]')
+  })).slice(0, 5);
+
+  // Enhanced price detection — detects price changes between page sections
+  const prices = [];
+  document.querySelectorAll('[class*="price"], [id*="price"], [data-price], .total, .amount, [class*="cost"]').forEach(el => {
+    const text = el.innerText?.trim();
+    if (text && /[₹$€£]|\d+\.\d{2}/.test(text)) {
+      prices.push({ text: text.slice(0, 100), location: el.getBoundingClientRect().top < 300 ? 'above-fold' : 'below-fold' });
+    }
+  });
+
+  // For backward compatibility, also export flat string arrays used by the NLP detector
+  const buttonTexts = buttons.map(b => typeof b === 'string' ? b : b.text);
+  const checkboxTexts = checkboxes.map(c => typeof c === 'string' ? c : c.text);
+  const modalTexts = modals.map(m => typeof m === 'string' ? m : m.text);
+
+  return { buttons: buttonTexts, forms, timers, checkboxes: checkboxTexts, modals: modalTexts, prices, _enhanced: { buttons, checkboxes, modals } };
 }
 
 // Main sequence: Extract DOM, request screenshot, push payload to background
+// ELEVATED: POLISH_4 — performance tracking and first-visit detection
 async function extractAndAnalyze() {
+  const extractStart = performance.now();
   const snapshot = extractDOMSnapshot();
+  const extractMs = Math.round(performance.now() - extractStart);
+
   const currentHash = JSON.stringify(snapshot).slice(0, 100); // Basic content hash
 
   if (currentHash === lastAnalyzedHash) return; // Skip if no meaningful change
   lastAnalyzedHash = currentHash;
+
+  // First-visit detection for this session
+  const visitKey = `visited:${window.location.hostname}`;
+  const isFirstVisit = !sessionStorage.getItem(visitKey);
+  sessionStorage.setItem(visitKey, '1');
 
   try {
     // Request background script to captureVisibleTab
@@ -51,13 +97,20 @@ async function extractAndAnalyze() {
       // Extension context may have been invalidated or no background listener — skip screenshot
     }
 
+    const pageLoadTime = (performance.timing?.loadEventEnd && performance.timing?.navigationStart)
+      ? Math.round(performance.timing.loadEventEnd - performance.timing.navigationStart)
+      : null;
+
     const payload = {
       action: "ANALYZE_DOM",
       url: window.location.href,
       title: document.title,
       timestamp: new Date().toISOString(),
       dom_snapshot: snapshot,
-      screenshotBase64: screenshotBase64
+      screenshotBase64: screenshotBase64,
+      extractionTimeMs: extractMs,
+      pageLoadTime: pageLoadTime,
+      isFirstVisit: isFirstVisit
     };
 
     // Send payload to background

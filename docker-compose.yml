@@ -15,6 +15,7 @@ services:
       - RATE_LIMIT_MAX_REQUESTS=100
       # OPENAI_API_KEY should be passed from host env
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - JWT_SECRET=${JWT_SECRET:-darkscan_dev_secret_change_in_production}
     depends_on:
       - mongo
       - redis

@@ -39,11 +39,23 @@ const ReportPage = () => {
     }
   }, [audit, canvasRef]);
 
+  // FIXED: BROKEN_5 — canvas uses hardcoded hex colors, CSS vars don't work in canvas context
+  const CATEGORY_COLORS = {
+    fake_countdown: '#FF4444',
+    hidden_cost: '#FF8C00',
+    roach_motel: '#9B59B6',
+    trick_question: '#E67E22',
+    forced_continuity: '#3498DB',
+    confirm_shaming: '#C0392B'
+  };
+  const DEFAULT_OVERLAY_COLOR = '#FF4444';
+
   const drawScreenshotWithOverlays = () => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     const img = new Image();
     img.onload = () => {
+      if (img.width === 0 || img.height === 0) { console.warn('Screenshot has zero dimensions'); return; }
       canvas.width = img.width;
       canvas.height = img.height;
       ctx.drawImage(img, 0, 0);
@@ -51,15 +63,16 @@ const ReportPage = () => {
       // Draw bounding boxes if present
       audit.detectedPatterns?.forEach(p => {
         if (p.boundingBox) {
-          ctx.strokeStyle = `var(--cat-${p.category})`;
+          const color = CATEGORY_COLORS[p.category] || DEFAULT_OVERLAY_COLOR;
+          ctx.strokeStyle = color;
           ctx.lineWidth = 4;
           ctx.strokeRect(p.boundingBox.x, p.boundingBox.y, p.boundingBox.w, p.boundingBox.h);
           
-          ctx.fillStyle = `var(--cat-${p.category})`;
+          ctx.fillStyle = color;
           ctx.fillRect(p.boundingBox.x, p.boundingBox.y - 30, Math.max(150, p.category.length * 10), 30);
           
           ctx.fillStyle = '#fff';
-          ctx.font = '16px "DM Sans"';
+          ctx.font = 'bold 14px Arial, sans-serif';
           ctx.fillText(`${p.category.toUpperCase()} (${Math.round(p.confidence*100)}%)`, p.boundingBox.x + 10, p.boundingBox.y - 10);
         }
       });

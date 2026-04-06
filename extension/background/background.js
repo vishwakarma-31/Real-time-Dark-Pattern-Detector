@@ -1,6 +1,6 @@
 // Background Service Worker for MV3
-const API_URL = "http://localhost:5000/api/v1/analyze";
-const WS_URL = "ws://localhost:5000/ws";
+importScripts('../config.js');
+// FIXED: BLOCKER_3 — URLs loaded from config.js, no hardcoded localhost
 
 let socket = null;
 let currentSessionId = crypto.randomUUID();
@@ -31,7 +31,8 @@ function connectWebSocket() {
     socket = new WebSocket(WS_URL);
 
     socket.onopen = () => {
-      socket.send(JSON.stringify({ type: 'init', sessionId: currentSessionId }));
+      // FIXED: BLOCKER_2 — type matches websocketService registration handler
+      socket.send(JSON.stringify({ type: 'register', sessionId: currentSessionId }));
     };
 
     socket.onmessage = (event) => {
@@ -133,6 +134,27 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 // --- Core Analysis Logic ---
+// HARDENED: RISK_2 — screenshots resized to max 1024px wide at 60% JPEG quality before sending
+async function resizeScreenshot(base64DataUrl, maxWidthPx = 1024) {
+  return new Promise((resolve) => {
+    if (!base64DataUrl) { resolve(null); return; }
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, maxWidthPx / img.width);
+      const canvas = new OffscreenCanvas(Math.floor(img.width * scale), Math.floor(img.height * scale));
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.convertToBlob({ type: 'image/jpeg', quality: 0.6 }).then(blob => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.readAsDataURL(blob);
+      });
+    };
+    img.onerror = () => resolve(null);
+    img.src = base64DataUrl;
+  });
+}
+
 async function handleAnalysisRequest(url, domSnapshot, screenshotBase64, title, tabId) {
   // 1. Check local cache
   const data = await chrome.storage.local.get(url);
@@ -149,11 +171,8 @@ async function handleAnalysisRequest(url, domSnapshot, screenshotBase64, title, 
   // 2. Call API
   updateBadgeLoading();
   try {
-    // Truncate the screenshot to avoid 413 (keep under ~2MB base64)
-    let safeScreenshot = null;
-    if (screenshotBase64 && screenshotBase64.length < 2 * 1024 * 1024) {
-      safeScreenshot = screenshotBase64;
-    }
+    // Resize the screenshot client-side before sending
+    const resizedScreenshot = await resizeScreenshot(screenshotBase64);
 
     // Truncate DOM snapshot arrays to prevent excessively large payloads
     const safeDom = {};
@@ -176,7 +195,7 @@ async function handleAnalysisRequest(url, domSnapshot, screenshotBase64, title, 
         title,
         sessionId: currentSessionId,
         domSnapshot: safeDom,
-        screenshotBase64: safeScreenshot
+        screenshotBase64: resizedScreenshot
       })
     });
 

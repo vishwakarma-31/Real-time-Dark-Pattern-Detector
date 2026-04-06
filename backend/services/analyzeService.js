@@ -4,14 +4,24 @@ const { emitToSession } = require('./websocketService');
 const { OpenAI } = require('openai');
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+// FIXED: BROKEN_1 — standardized detector result shape, Promise.allSettled prevents cascade failure
+function makeDetectorResult(detector, patterns, processingTimeMs, status = 'complete') {
+  return { detector, status, patterns: patterns || [], processingTimeMs, rawScore: 0 };
+}
+
+function makeErrorResult(detector, error) {
+  console.error(`[${detector}Detector] Error:`, error.message || error);
+  return { detector, status: 'degraded', patterns: [], processingTimeMs: 0, rawScore: 0, error: error.message || String(error) };
+}
+
 /**
  * Main Orchestrator
  */
 exports.runAllDetectors = async (payload) => {
   const { url, sessionId, domSnapshot, screenshotBase64 } = payload;
   
-  // Run all three simultaneously
-  const [nlpResult, domResult, visualResult] = await Promise.all([
+  // FIXED: BROKEN_1 — Promise.allSettled prevents cascade failure from a single detector
+  const [nlpSettled, domSettled, visualSettled] = await Promise.allSettled([
     exports.runNlpDetector(domSnapshot).then(res => {
       if (sessionId) emitToSession(sessionId, 'nlp_complete', res);
       return res;
@@ -26,6 +36,10 @@ exports.runAllDetectors = async (payload) => {
     })
   ]);
 
+  const nlpResult = nlpSettled.status === 'fulfilled' ? nlpSettled.value : makeErrorResult('nlp', nlpSettled.reason);
+  const domResult = domSettled.status === 'fulfilled' ? domSettled.value : makeErrorResult('dom', domSettled.reason);
+  const visualResult = visualSettled.status === 'fulfilled' ? visualSettled.value : makeErrorResult('visual', visualSettled.reason);
+
   const fused = exports.fuseResults(nlpResult, domResult, visualResult);
   const legallyMapped = exports.mapToLegalClauses(fused.patterns);
   
@@ -39,13 +53,14 @@ exports.runAllDetectors = async (payload) => {
  * 1. NLP Detector (OpenAI GPT-4o)
  */
 exports.runNlpDetector = async (domSnapshot) => {
-  const textCorpus = [
-    ...(domSnapshot.buttons || []),
-    ...(domSnapshot.modals || []),
-    ...(domSnapshot.checkboxes || [])
-  ].join(" | ");
-
+  const start = Date.now();
   try {
+    const textCorpus = [
+      ...(domSnapshot.buttons || []),
+      ...(domSnapshot.modals || []),
+      ...(domSnapshot.checkboxes || [])
+    ].join(" | ");
+
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
@@ -60,10 +75,9 @@ exports.runNlpDetector = async (domSnapshot) => {
     });
 
     const result = JSON.parse(response.choices[0].message.content);
-    return result.patterns || [];
+    return makeDetectorResult('nlp', result.patterns, Date.now() - start);
   } catch (error) {
-    console.error("[runNlpDetector] API Error", error);
-    return [];
+    return makeErrorResult('nlp', error);
   }
 };
 
@@ -71,44 +85,50 @@ exports.runNlpDetector = async (domSnapshot) => {
  * 2. DOM Structure Detector (Heuristics)
  */
 exports.runDomDetector = async (domSnapshot) => {
-  const patterns = [];
-  
-  // Rule: Timers present
-  if (domSnapshot.timers && domSnapshot.timers.length > 0) {
-    patterns.push({
-      category: 'fake_countdown',
-      confidence: 0.85,
-      evidenceText: domSnapshot.timers[0] || 'Timer detected'
-    });
-  }
+  const start = Date.now();
+  try {
+    const patterns = [];
+    
+    // Rule: Timers present
+    if (domSnapshot.timers && domSnapshot.timers.length > 0) {
+      patterns.push({
+        category: 'fake_countdown',
+        confidence: 0.85,
+        evidenceText: domSnapshot.timers[0] || 'Timer detected'
+      });
+    }
 
-  // Rule: Trick Questions (Double Negatives)
-  if (domSnapshot.checkboxes) {
-    domSnapshot.checkboxes.forEach(label => {
-      const lower = label.toLowerCase();
-      if ((lower.includes("uncheck") || lower.includes("do not")) && lower.includes("not receive")) {
-        patterns.push({
-          category: 'trick_question',
-          confidence: 0.90,
-          evidenceText: label
-        });
-      }
-    });
+    // Rule: Trick Questions (Double Negatives)
+    if (domSnapshot.checkboxes) {
+      domSnapshot.checkboxes.forEach(label => {
+        const lower = label.toLowerCase();
+        if ((lower.includes("uncheck") || lower.includes("do not")) && lower.includes("not receive")) {
+          patterns.push({
+            category: 'trick_question',
+            confidence: 0.90,
+            evidenceText: label
+          });
+        }
+      });
+    }
+    
+    return makeDetectorResult('dom', patterns, Date.now() - start);
+  } catch (error) {
+    return makeErrorResult('dom', error);
   }
-  
-  return patterns;
 };
 
 /**
  * 3. Visual Detector (GPT-4o Vision)
  */
 exports.runVisualDetector = async (screenshotBase64) => {
-  if (!screenshotBase64) return [];
-
-  // Stripping the data:image prefix if present for OpenAI format
-  const base64Data = screenshotBase64.replace(/^data:image\/\w+;base64,/, "");
-
+  const start = Date.now();
   try {
+    if (!screenshotBase64) return makeDetectorResult('visual', [], Date.now() - start);
+
+    // Stripping the data:image prefix if present for OpenAI format
+    const base64Data = screenshotBase64.replace(/^data:image\/\w+;base64,/, "");
+
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
@@ -128,10 +148,9 @@ exports.runVisualDetector = async (screenshotBase64) => {
     });
 
     const result = JSON.parse(response.choices[0].message.content);
-    return result.patterns || [];
+    return makeDetectorResult('visual', result.patterns, Date.now() - start);
   } catch (error) {
-    console.error("[runVisualDetector] Error", error);
-    return [];
+    return makeErrorResult('visual', error);
   }
 };
 
@@ -143,7 +162,14 @@ exports.fuseResults = (nlpResults, domResults, visualResults) => {
   const W_NLP = 0.35;
   const W_VISUAL = 0.25;
 
-  const rawPatterns = [...nlpResults, ...domResults, ...visualResults];
+  // FIXED: BROKEN_1 — read .patterns from standardized detector result shape
+  const rawPatterns = [...(nlpResults.patterns || []), ...(domResults.patterns || []), ...(visualResults.patterns || [])];
+
+  // Track active vs degraded detectors for weight redistribution
+  const activeDetectors = [nlpResults, domResults, visualResults].filter(r => r.status === 'complete').length;
+  const degradedCount = 3 - activeDetectors;
+  if (degradedCount > 0) console.warn(`[FusionEngine] ${degradedCount} detector(s) degraded — weights redistributed`);
+
   const grouped = {};
 
   // Deduplication & Aggregation

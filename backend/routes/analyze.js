@@ -4,19 +4,15 @@ const analyzeController = require('../controllers/analyzeController');
 const rateLimit = require('express-rate-limit');
 const redisClient = require('../config/redis');
 
-// Middleware mock for JWT Auth to satisfy project requirements without overriding existing repo logic
-const requireAuth = (req, res, next) => {
-  // Assuming existing middleware attaches req.user
-  if (!req.user) req.user = { _id: "000000000000000000000000" }; 
-  next();
-};
+// HARDENED: RISK_3 — fake requireAuth replaced with real JWT verification middleware
+const { protect, optionalProtect } = require('../middleware/auth');
 
 const { analysisLimiter, communityReportLimiter, publishLimiter } = require('../middleware/rateLimiter');
 
 // @route   POST /api/v1/analyze
 // @desc    Main entry point for extension audits
-// @access  Public (Rate limited)
-router.post('/analyze', analysisLimiter, analyzeController.analyzeUrl);
+// @access  Public (Rate limited, optionally authenticated)
+router.post('/analyze', analysisLimiter, optionalProtect, analyzeController.analyzeUrl);
 
 // @route   GET /api/v1/analyze/audit/:id
 // @desc    Get specific audit
@@ -26,12 +22,12 @@ router.get('/audit/:id', analyzeController.getSiteReport);
 // @route   GET /api/v1/analyze/history
 // @desc    Get paginated user history
 // @access  Protected
-router.get('/history', requireAuth, analyzeController.getAuditHistory);
+router.get('/history', protect, analyzeController.getAuditHistory);
 
 // @route   GET /api/v1/analyze/stats
 // @desc    Dashboard aggregations
 // @access  Protected
-router.get('/stats', requireAuth, analyzeController.getDashboardStats);
+router.get('/stats', protect, analyzeController.getDashboardStats);
 
 // @route   GET /api/v1/analyze/report/public/:auditId
 // @desc    Public reports view without auth
@@ -41,7 +37,7 @@ router.get('/report/public/:auditId', analyzeController.getPublicReport);
 // @route   POST /api/v1/analyze/report/:auditId/publish
 // @desc    Publish a report
 // @access  Protected
-router.post('/report/:auditId/publish', requireAuth, publishLimiter, analyzeController.makeReportPublic);
+router.post('/report/:auditId/publish', protect, publishLimiter, analyzeController.makeReportPublic);
 
 // @route   POST /api/v1/analyze/report/community
 // @desc    Anonymous submission of dark patterns
@@ -51,6 +47,7 @@ router.post('/report/community', communityReportLimiter, analyzeController.repor
 // @route   GET /api/v1/analyze/health
 // @desc    Healthcheck
 // @access  Public
+// HARDENED: RISK_1 — health endpoint verifies OpenAI key validity
 router.get('/health', async (req, res) => {
   // Test Redis
   let redisOk = false;
@@ -59,11 +56,24 @@ router.get('/health', async (req, res) => {
     redisOk = true;
   } catch(e) {}
 
+  // Test OpenAI connectivity
+  let openaiOk = false;
+  try {
+    const { OpenAI } = require('openai');
+    const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    await client.models.list();
+    openaiOk = true;
+  } catch (e) {
+    openaiOk = false;
+  }
+
   res.status(200).json({
     status: 'ok',
     redis: redisOk,
     mongo: require('mongoose').connection.readyState === 1,
-    openai: !!process.env.OPENAI_API_KEY
+    openai: openaiOk,
+    // ELEVATED: POLISH_1 — cache hit/miss observability
+    cacheStats: redisClient.getStats()
   });
 });
 

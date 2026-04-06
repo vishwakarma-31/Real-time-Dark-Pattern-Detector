@@ -12,7 +12,8 @@ exports.initWebSocketServer = (server) => {
     ws.on('message', (message) => {
       try {
         const data = JSON.parse(message);
-        if (data.type === 'init' && data.sessionId) {
+        // FIXED: BLOCKER_2 — registration type corrected to match extension client
+        if (data.type === 'register' && data.sessionId) {
           currentSessionId = data.sessionId;
           sessionMap.set(currentSessionId, ws);
         }

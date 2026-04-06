@@ -48,4 +48,7 @@ const CommunityReportSchema = new mongoose.Schema({
 // Index for deduplication queries
 CommunityReportSchema.index({ url: 1, category: 1 });
 
+// ELEVATED: POLISH_3 — TTL auto-cleans unreviewed community reports after 30 days
+CommunityReportSchema.index({ submittedAt: 1 }, { expireAfterSeconds: 30 * 24 * 60 * 60, partialFilterExpression: { status: 'pending' } });
+
 module.exports = mongoose.model('CommunityReport', CommunityReportSchema);

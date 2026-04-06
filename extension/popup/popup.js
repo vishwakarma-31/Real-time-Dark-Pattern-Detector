@@ -118,8 +118,8 @@ btnToggle.addEventListener('click', () => {
 });
 
 btnReport.addEventListener('click', () => {
-  // Open locally hosted dashboard
-  const baseUrl = 'http://localhost:5000';
+  // FIXED: BLOCKER_3 — dashboard URL now loaded from config.js
+  const baseUrl = (typeof DASHBOARD_URL !== 'undefined') ? DASHBOARD_URL : 'http://localhost:5000';
   const dashboardUrl = currentAuditId 
      ? `${baseUrl}/report/${currentAuditId}` 
      : `${baseUrl}/`;
